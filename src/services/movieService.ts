@@ -11,23 +11,23 @@ interface FetchMoviesResponse {
 }
 
 export default async function fetchMovies(query: string, page = 1): Promise<Movie[]> {
+  console.log('[service] fetchMovies called with:', { query, page }); // ← лог 7
+
   const token = (import.meta.env.VITE_TMDB_TOKEN || '').trim();
-
-  console.log('VITE_TMDB_TOKEN length:', token.length);
-
   if (!token) {
-   
-    throw new Error('TMDB token is missing. Put VITE_TMDB_TOKEN in .env.local and restart dev server.');
+    console.error('[service] NO TOKEN from env'); // ← лог 8
+    throw new Error('TMDB token missing');
   }
 
   const { data } = await axios.get<FetchMoviesResponse>(`${BASE_URL}/search/movie`, {
     params: { query, page, include_adult: false, language: 'en-US' },
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`, 
+      Authorization: `Bearer ${token}`,
     },
   });
 
   return data.results;
 }
+
 

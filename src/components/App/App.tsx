@@ -1,57 +1,47 @@
-import 'modern-normalize';
-import SearchBar from '../SearchBar/SearchBar';
-import { Toaster, toast } from 'sonner';
 import { useEffect, useState } from 'react';
+import { Toaster, toast } from 'sonner';
 import type { Movie } from '../../types/movie';
+import SearchBar from '../SearchBar/SearchBar';
 import MovieGrid from '../MovieGrid/MovieGrid';
-import Loader from '../Loader/Loader';
 import MovieModal from '../MovieModal/MovieModal';
-import fetchMovies from '../../services/movieService';
+import Loader from '../Loader/Loader';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
+import fetchMovies from '../../services/movieService';
 
 export default function App() {
   const [query, setQuery] = useState('');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [selected, setSelected] = useState<Movie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isError, setIsError] = useState<boolean>(false);
 
-  const handleSearchSubmit = (searchQuery: string) => {
-    setQuery(searchQuery);
-  };
-
-  const handleSelect = (movie: Movie) => {
-    setSelectedMovie(movie);
-    setIsModalOpen(true);
+  const handleSearchSubmit = (q: string) => {
+    console.log('[App] setQuery:', q); 
+    setQuery(q);
   };
 
   useEffect(() => {
+    console.log('[App] useEffect, query =', query); 
     if (!query) return;
-    const searchMovies = async (query: string) => {
+
+    (async () => {
       try {
         setIsError(false);
         setLoading(true);
+        console.log('[App] calling fetchMovies…'); 
         const res = await fetchMovies(query);
-
-        if (res.length == 0) {
-          toast.error('No movies found for your request.');
-        }
+        console.log('[App] fetchMovies OK, count =', res.length); 
+        if (res.length === 0) toast.error('No movies found for your request.');
         setMovies(res);
-        console.log('Movies:', res);
-      } catch {
+      } catch (err) {
+        console.error('[App] fetchMovies ERROR:', err); 
         setIsError(true);
       } finally {
         setLoading(false);
       }
-    };
-    searchMovies(query);
+    })();
   }, [query]);
-
-  const closeModalWindow = () => {
-    setIsModalOpen(false);
-    setSelectedMovie(null);
-  };
 
   return (
     <>
@@ -60,11 +50,12 @@ export default function App() {
       {loading && <Loader />}
       {isError && <ErrorMessage />}
       {!isError && movies.length > 0 && (
-        <MovieGrid onSelect={handleSelect} movies={movies} />
+        <MovieGrid movies={movies} onSelect={(m) => { setSelected(m); setIsModalOpen(true); }} />
       )}
-      {isModalOpen && selectedMovie && (
-        <MovieModal movie={selectedMovie} onClose={closeModalWindow} />
+      {isModalOpen && selected && (
+        <MovieModal movie={selected} onClose={() => setIsModalOpen(false)} />
       )}
     </>
   );
 }
+
